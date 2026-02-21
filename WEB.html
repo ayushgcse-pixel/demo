@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ember & Oak — Fine Dining</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Jost:wght@200;300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #f5f0e8;
+    --dark: #1a1410;
+    --gold: #c8973a;
+    --gold-light: #e8c97a;
+    --brown: #3d2b1f;
+    --text: #2c1f14;
+    --muted: #8a7060;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Jost', sans-serif;
+    background: var(--cream);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ─── PAGE SYSTEM ─── */
+  .page { display: none; min-height: 100vh; }
+  .page.active { display: block; }
+
+  /* ─── LOGIN PAGE ─── */
+  #login-page {
+    display: none;
+    min-height: 100vh;
+    position: relative;
+    overflow: hidden;
+  }
+  #login-page.active { display: flex; align-items: center; justify-content: center; }
+
+  .login-bg {
+    position: fixed;
+    inset: 0;
+    background: var(--dark);
+    z-index: 0;
+  }
+  .login-bg::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 80% 60% at 50% 40%, #3d2414 0%, #1a1410 60%, #0d0a07 100%);
+  }
+  .login-bg::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0 L31 29 L60 30 L31 31 L30 60 L29 31 L0 30 L29 29Z' fill='%23c8973a' opacity='0.04'/%3E%3C/svg%3E") repeat;
+    opacity: 0.5;
+  }
+
+  .login-card {
+    position: relative;
+    z-index: 1;
+    width: 420px;
+    max-width: 90vw;
+    padding: 56px 48px;
+    background: rgba(245,240,232,0.04);
+    border: 1px solid rgba(200,151,58,0.25);
+    backdrop-filter: blur(20px);
+    animation: fadeUp 0.8s ease both;
+  }
+
+  .login-logo {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+  .login-logo .emblem {
+    width: 60px;
+    height: 60px;
+    border: 1.5px solid var(--gold);
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    margin-bottom: 16px;
+    color: var(--gold);
+  }
+  .login-logo h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 32px;
+    font-weight: 300;
+    color: var(--cream);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
+  .login-logo p {
+    font-size: 11px;
+    letter-spacing: 4px;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-top: 6px;
+    font-weight: 300;
+  }
+
+  .form-group { margin-bottom: 24px; }
+  .form-group label {
+    display: block;
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 10px;
+    font-weight: 400;
+  }
+  .form-group input {
+    width: 100%;
+    padding: 14px 0;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid rgba(200,151,58,0.3);
+    color: var(--cream);
+    font-family: 'Jost', sans-serif;
+    font-size: 14px;
+    font-weight: 300;
+    letter-spacing: 1px;
+    outline: none;
+    transition: border-color 0.3s;
+  }
+  .form-group input:focus { border-bottom-color: var(--gold); }
+  .form-group input::placeholder { color: rgba(245,240,232,0.3); }
+
+  .error-msg {
+    color: #e85d5d;
+    font-size: 12px;
+    letter-spacing: 1px;
+    margin-bottom: 20px;
+    display: none;
+  }
+
+  .btn-login {
+    width: 100%;
+    padding: 16px;
+    background: transparent;
+    border: 1px solid var(--gold);
+    color: var(--gold);
+    font-family: 'Jost', sans-serif;
+    font-size: 11px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.3s;
+    margin-top: 8px;
+  }
+  .btn-login:hover {
+    background: var(--gold);
+    color: var(--dark);
+  }
+
+  .login-hint {
+    text-align: center;
+    margin-top: 24px;
+    font-size: 11px;
+    color: rgba(245,240,232,0.3);
+    letter-spacing: 1px;
+  }
+
+  /* ─── HOME PAGE ─── */
+  #home-page { background: var(--cream); }
+
+  nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 28px 60px;
+    border-bottom: 1px solid rgba(61,43,31,0.12);
+    position: sticky;
+    top: 0;
+    background: rgba(245,240,232,0.95);
+    backdrop-filter: blur(10px);
+    z-index: 100;
+  }
+  .nav-logo {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 22px;
+    font-weight: 400;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--brown);
+  }
+  .nav-logo span { color: var(--gold); }
+  .nav-links { display: flex; gap: 40px; align-items: center; }
+  .nav-links a {
+    text-decoration: none;
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 400;
+    transition: color 0.2s;
+    cursor: pointer;
+  }
+  .nav-links a:hover, .nav-links a.active { color: var(--gold); }
+  .btn-logout {
+    padding: 9px 22px;
+    border: 1px solid var(--brown);
+    background: transparent;
+    font-family: 'Jost', sans-serif;
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    cursor: pointer;
+    color: var(--brown);
+    transition: all 0.2s;
+  }
+  .btn-logout:hover { background: var(--brown); color: var(--cream); }
+
+  /* Hero */
+  .hero {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    min-height: calc(100vh - 81px);
+  }
+  .hero-text {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 80px 80px 80px 60px;
+    animation: fadeUp 0.9s 0.1s both;
+  }
+  .hero-label {
+    font-size: 10px;
+    letter-spacing: 5px;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .hero-label::before {
+    content: '';
+    width: 40px;
+    height: 1px;
+    background: var(--gold);
+  }
+  .hero h2 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(48px, 5vw, 72px);
+    font-weight: 300;
+    line-height: 1.1;
+    color: var(--brown);
+    margin-bottom: 24px;
+  }
+  .hero h2 em { font-style: italic; color: var(--gold); }
+  .hero p {
+    font-size: 15px;
+    line-height: 1.8;
+    color: var(--muted);
+    font-weight: 300;
+    max-width: 420px;
+    margin-bottom: 40px;
+  }
+  .btn-menu {
+    display: inline-block;
+    padding: 16px 44px;
+    background: var(--brown);
+    color: var(--cream);
+    font-family: 'Jost', sans-serif;
+    font-size: 10px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    cursor: pointer;
+    border: none;
+    transition: all 0.3s;
+    align-self: flex-start;
+  }
+  .btn-menu:hover { background: var(--gold); }
+
+  .hero-visual {
+    position: relative;
+    background: var(--brown);
+    overflow: hidden;
+    animation: fadeIn 1s 0.3s both;
+  }
+  .hero-visual::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 30% 60%, rgba(200,151,58,0.3) 0%, transparent 60%);
+  }
+  .hero-visual-inner {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 30px;
+  }
+  .dish-icon {
+    font-size: 80px;
+    animation: float 4s ease-in-out infinite;
+  }
+  .hero-stats {
+    display: flex;
+    gap: 50px;
+  }
+  .stat { text-align: center; }
+  .stat .num {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 40px;
+    font-weight: 300;
+    color: var(--gold-light);
+    display: block;
+  }
+  .stat .lbl {
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: rgba(245,240,232,0.5);
+    margin-top: 4px;
+  }
+
+  /* Features */
+  .features {
+    display: grid;
+    grid-template-columns: repeat(3,1fr);
+    border-top: 1px solid rgba(61,43,31,0.1);
+  }
+  .feature {
+    padding: 60px 50px;
+    border-right: 1px solid rgba(61,43,31,0.1);
+    animation: fadeUp 0.8s ease both;
+  }
+  .feature:last-child { border-right: none; }
+  .feature-icon { font-size: 32px; margin-bottom: 20px; }
+  .feature h3 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 24px;
+    font-weight: 400;
+    color: var(--brown);
+    margin-bottom: 12px;
+  }
+  .feature p {
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--muted);
+    font-weight: 300;
+  }
+
+  /* ─── MENU PAGE ─── */
+  #menu-page { background: var(--cream); }
+
+  .menu-hero {
+    background: var(--dark);
+    padding: 80px 60px 60px;
+    position: relative;
+    overflow: hidden;
+  }
+  .menu-hero::after {
+    content: 'MENU';
+    position: absolute;
+    right: -20px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 180px;
+    font-weight: 600;
+    color: rgba(200,151,58,0.05);
+    letter-spacing: 20px;
+    pointer-events: none;
+  }
+  .menu-hero .breadcrumb {
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 20px;
+    cursor: pointer;
+  }
+  .menu-hero .breadcrumb:hover { opacity: 0.7; }
+  .menu-hero h2 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 56px;
+    font-weight: 300;
+    color: var(--cream);
+    letter-spacing: 2px;
+  }
+  .menu-hero h2 em { font-style: italic; color: var(--gold); }
+  .menu-hero p {
+    color: rgba(245,240,232,0.5);
+    font-size: 14px;
+    font-weight: 300;
+    letter-spacing: 1px;
+    margin-top: 10px;
+  }
+
+  .menu-filters {
+    display: flex;
+    gap: 0;
+    padding: 0 60px;
+    border-bottom: 1px solid rgba(61,43,31,0.12);
+    background: var(--cream);
+    position: sticky;
+    top: 81px;
+    z-index: 50;
+  }
+  .filter-btn {
+    padding: 20px 28px;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    font-family: 'Jost', sans-serif;
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: -1px;
+  }
+  .filter-btn:hover { color: var(--gold); }
+  .filter-btn.active { color: var(--gold); border-bottom-color: var(--gold); }
+
+  .menu-body { padding: 60px; }
+
+  .menu-section { margin-bottom: 70px; display: none; }
+  .menu-section.visible { display: block; }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 40px;
+  }
+  .section-header h3 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 36px;
+    font-weight: 300;
+    color: var(--brown);
+    letter-spacing: 1px;
+  }
+  .section-header::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(to right, rgba(200,151,58,0.4), transparent);
+  }
+
+  .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; }
+
+  .menu-item {
+    padding: 28px 32px;
+    background: white;
+    border-left: 3px solid transparent;
+    transition: all 0.25s;
+    cursor: default;
+    animation: fadeUp 0.5s ease both;
+  }
+  .menu-item:hover {
+    border-left-color: var(--gold);
+    transform: translateX(4px);
+    box-shadow: 4px 0 20px rgba(200,151,58,0.1);
+  }
+  .item-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+  }
+  .item-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 20px;
+    font-weight: 400;
+    color: var(--brown);
+    line-height: 1.2;
+  }
+  .item-price {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 20px;
+    font-weight: 300;
+    color: var(--gold);
+    white-space: nowrap;
+    margin-left: 20px;
+  }
+  .item-desc {
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--muted);
+    font-weight: 300;
+    margin-bottom: 12px;
+  }
+  .item-tags { display: flex; gap: 8px; flex-wrap: wrap; }
+  .tag {
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border: 1px solid rgba(200,151,58,0.3);
+    color: var(--gold);
+    font-weight: 400;
+  }
+  .tag.veg { border-color: rgba(80,140,80,0.4); color: #508c50; }
+  .tag.spicy { border-color: rgba(200,80,50,0.4); color: #c85032; }
+  .tag.chef { border-color: rgba(200,151,58,0.6); color: var(--gold); background: rgba(200,151,58,0.06); }
+
+  /* ─── ANIMATIONS ─── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-12px); }
+  }
+
+  /* ─── RESPONSIVE ─── */
+  @media (max-width: 768px) {
+    nav { padding: 20px 24px; }
+    .nav-links { gap: 20px; }
+    .hero { grid-template-columns: 1fr; }
+    .hero-visual { min-height: 300px; }
+    .hero-text { padding: 50px 24px; }
+    .features { grid-template-columns: 1fr; }
+    .feature { border-right: none; border-bottom: 1px solid rgba(61,43,31,0.1); }
+    .menu-hero { padding: 50px 24px 40px; }
+    .menu-filters { padding: 0 16px; overflow-x: auto; }
+    .menu-body { padding: 40px 24px; }
+    .menu-grid { grid-template-columns: 1fr; }
+    .login-card { padding: 40px 28px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ════════════════ LOGIN PAGE ════════════════ -->
+<div id="login-page" class="page active">
+  <div class="login-bg"></div>
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="emblem">🌿</div>
+      <h1>Ember &amp; Oak</h1>
+      <p>Fine Dining — Est. 2010</p>
+    </div>
+    <div class="form-group">
+      <label>Email Address</label>
+      <input type="email" id="email" placeholder="guest@emberoak.com" />
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="password" placeholder="••••••••" />
+    </div>
+    <p class="error-msg" id="error-msg">⚠ Incorrect credentials. Try: guest / 1234</p>
+    <button class="btn-login" onclick="doLogin()">Enter Restaurant</button>
+    <p class="login-hint">Demo: guest@emberoak.com / 1234</p>
+  </div>
+</div>
+
+<!-- ════════════════ HOME PAGE ════════════════ -->
+<div id="home-page" class="page">
+  <nav>
+    <div class="nav-logo">Ember <span>&</span> Oak</div>
+    <div class="nav-links">
+      <a class="active" onclick="showPage('home')">Home</a>
+      <a onclick="showPage('menu')">Menu</a>
+      <a href="#">Reservations</a>
+      <a href="#">About</a>
+    </div>
+    <button class="btn-logout" onclick="doLogout()">Sign Out</button>
+  </nav>
+
+  <section class="hero">
+    <div class="hero-text">
+      <div class="hero-label">Welcome Back</div>
+      <h2>Where every meal<br>becomes a <em>memory</em></h2>
+      <p>Nestled in the heart of the city, Ember &amp; Oak crafts seasonal menus celebrating the finest local ingredients — cooked over live fire with precision and soul.</p>
+      <button class="btn-menu" onclick="showPage('menu')">Explore Our Menu</button>
+    </div>
+    <div class="hero-visual">
+      <div class="hero-visual-inner">
+        <div class="dish-icon">🍽️</div>
+        <div class="hero-stats">
+          <div class="stat"><span class="num">14</span><span class="lbl">Years Open</span></div>
+          <div class="stat"><span class="num">38</span><span class="lbl">Dishes</span></div>
+          <div class="stat"><span class="num">2</span><span class="lbl">Michelin ★</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="features">
+    <div class="feature" style="animation-delay:0.1s">
+      <div class="feature-icon">🔥</div>
+      <h3>Live Fire Cooking</h3>
+      <p>Every dish is finished over our custom-built wood-burning hearth, imparting depth and character that only live fire can deliver.</p>
+    </div>
+    <div class="feature" style="animation-delay:0.2s">
+      <div class="feature-icon">🌾</div>
+      <h3>Seasonal &amp; Local</h3>
+      <p>Our menu changes with the seasons. We partner with over 20 local farms to bring the freshest produce directly to your table.</p>
+    </div>
+    <div class="feature" style="animation-delay:0.3s">
+      <div class="feature-icon">🍷</div>
+      <h3>Curated Wine List</h3>
+      <p>Over 200 labels from boutique vineyards worldwide, each hand-selected by our sommelier to complement the season's menu.</p>
+    </div>
+  </section>
+</div>
+
+<!-- ════════════════ MENU PAGE ════════════════ -->
+<div id="menu-page" class="page">
+  <nav>
+    <div class="nav-logo">Ember <span>&</span> Oak</div>
+    <div class="nav-links">
+      <a onclick="showPage('home')">Home</a>
+      <a class="active" onclick="showPage('menu')">Menu</a>
+      <a href="#">Reservations</a>
+      <a href="#">About</a>
+    </div>
+    <button class="btn-logout" onclick="doLogout()">Sign Out</button>
+  </nav>
+
+  <div class="menu-hero">
+    <div class="breadcrumb" onclick="showPage('home')">← Back to Home</div>
+    <h2>Our <em>Menu</em></h2>
+    <p>Seasonally inspired · Wood-fire crafted · Locally sourced</p>
+  </div>
+
+  <div class="menu-filters">
+    <button class="filter-btn active" onclick="filterMenu('all', this)">All</button>
+    <button class="filter-btn" onclick="filterMenu('starters', this)">Starters</button>
+    <button class="filter-btn" onclick="filterMenu('mains', this)">Mains</button>
+    <button class="filter-btn" onclick="filterMenu('sides', this)">Sides</button>
+    <button class="filter-btn" onclick="filterMenu('desserts', this)">Desserts</button>
+    <button class="filter-btn" onclick="filterMenu('drinks', this)">Drinks</button>
+  </div>
+
+  <div class="menu-body">
+
+    <!-- STARTERS -->
+    <div class="menu-section visible" data-section="starters">
+      <div class="section-header"><h3>🥗 Starters</h3></div>
+      <div class="menu-grid">
+        <div class="menu-item">
+          <div class="item-top"><span class="item-name">Charred Burrata</span><span class="item-price">$18</span></div>
+          <p class="item-desc">Wood-roasted heirloom tomatoes, aged balsamic, smoked sea salt, wild basil oil and grilled sourdough crostini.</p>
+          <div class="item-tags"><span class="tag veg">Vegetarian</span><span class="tag chef">Chef's Pick</span></div>
+        </div>
+        <div class="menu-item">
+          <div class="item-top"><span class="item-name">Tiger Prawn Tartare</span><span class="item-price">$22</span></div>
+          <p class="item-desc">Fresh-cured tiger prawns, yuzu kosho, avocado mousse, crispy shallots and pickled cucumber ribbons.</p>
+          <div class="item-tags"><span class="tag">Gluten Free</span></div>
+        </div>
+        <div class="menu-item">
+          <div class="item-top"><span class="item-name">Bone Marrow Crostini</span><span class="item-price">$20</span></div>
+          <p class="item-desc">Slow-roasted marrow, chimichurri verde, capers, shaved radish and toasted brioche rounds.</p>
+          <div class="item-tags"><span class="tag chef">Chef's Pick</span></div>
+        </div>
+        <div class="menu-item">
+          <div class="item-top"><span class="item-name">Spiced Lamb Kibbeh</span><span class="item-price">$17</span></div>
+          <p class="item-desc">Hand-rolled minced lamb with pine nuts, warm spices and sumac yogurt dipping sauce.</p>
+          <div class="item-tags"><span class="tag spicy">Spiced</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAINS -->
+    <div class="menu-section visible" data-section="mains">
+      <div class="section-header"><h3>🍖 Mains</h3></div>
+      <div class="menu-grid">
+        <div class="menu-item">
+          <div class="item-top"><span class="item-name">Dry-Aged Ribeye</span><span class="item-price">$68</span></div>
+          <p class="item-desc">300g 45-day dry-aged prime ribeye over the oak hearth, truffle butter, roasted garlic jus, bone marrow gratin.</p>
+          <div class="item-tags"><span class="tag chef">Chef's Pick</span><span class="tag">Gluten Free</span></div>
+        </div>
+        <div class="menu-item">
+          <div class="item-top"><span class="item-name">Whole Roasted Sea Bass</span><span class="item-price">$52</span></div>
+          <p class="item-desc">Line-caught sea bass, charred lemon butter, coastal herbs, fennel salad and sea purslane.</p>
+          <div class="item-tags"><span class="tag">Gluten Free</span></div>
+        </div>
+        <div class="menu-item">
+          <div class="item-top"><span class="item-name">Wild Mushroom Risotto</span><span class="item-price">$36</span></div>
+          <p class="item-desc">Carnaroli rice, foraged forest mushrooms, 36-month aged Parmigiano, truffle oil and crispy sage.</p>
+          <div class="item-tags"><span class="tag veg">Vegetarian</span></div>
+        </div>
+        <div class="menu-item">
+          <div class="item-top"><span class="item-name">Slow-Cooked Duck Leg</span><span class="item-price">$44</span></div>
+          <p class="item-desc">12-hour braised duck confit, orange and five-spice glaze, potato fondant, wilted chard and duck jus.</p>
+          <div class="item-tags"><span class="tag chef">Chef's Pick</span></div>
+        </div>
+        <div class="menu-item">
+          <div class="item-top"><span class="item-name">Spiced Cauliflower Steak</span><span class="item-price">$32</span></div>
+          <p class="item-desc">Whole roasted cauliflower, harissa, pomegranate, tahini, toasted almonds and date syrup.</p>
+          <div class="item-tags"><span class="tag veg">Vegetarian</span><span class="tag spicy">Spiced</span></div>
+        </div>
+        <div class="menu-item">
+          <div class="item-top"><span class="item-name">Lamb Rack en Croûte</span><span class="item-price">$58</span></div>
+          <p class="item-desc">Herb-crusted rack of lamb, Dijon, puff pastry, mint jelly and roasted heirloom carrots.</p>
+          <div class="item-tags"><span class="tag chef">Chef's Pick</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SIDES -->
+    <div class="menu-section visible" data-section="sides">
+      <div class="section-header"><h3>🌿 Sides</h3></div>
+      <div class="menu-grid">
+        <div class="menu-item">
+          <div class="item-top"><span class="item-name">Ember-Roasted Beets</span><span class="item-price">$12</span></div>
+          <p class="item-desc">Slow-roasted in the coals with goat's cheese, walnuts and orange zest vinaigrette.</p>
+          <div class="item-tags"><span class="tag veg">Vegetarian</span></div>
+        </div>
+        <div class="menu-item">
+          <div class="item-top"><span class="item-name">Duck Fat Potatoes</span><span class="item-price">$11</span></div>
+          <p class="item-desc">Crushed roasties cooked in aged duck fat, rosemary salt and whole grain mustard.</p>
+          <div class="item-tags"><span class="tag">Gluten Free</span></div>
+        </div>
+        <div class="menu-item">
+          <div class="item-top"><span class="item-name">Charred Tenderstem</span><span class="item-price">$10</span></div>
+          <p class="item-desc">Tenderstem broccoli over the grill, chilli flakes, toasted sesame and soy-ginger glaze.</p>
+          <div class="item-tags"><span class="tag veg">Vegetarian</span><span class="tag spicy">Spiced</span></div>
+        </div>
+        <div class="menu-item">
+          <div class="item-top"><span class="item-name">Truffle Mac &amp; Cheese</span><span class="item-price">$14</span></div>
+          <p class="item-desc">Three-cheese gratin with black truffle oil, crispy panko crust and chive cream.</p>
+          <div class="item-tags"><span class="tag veg">Vegetarian</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DESSERTS -->
+    <div class="menu-section visible" data-section="desserts">
+      <div class="section-header"><h3>🍮 Desserts</h3></div>
+      <div class="menu-grid">
+        <div class="menu-item">
+          <div class="item-top"><span class="item-name">Dark Chocolate Fondant</span><span class="item-price">$16</span></div>
+          <p class="item-desc">72% Valrhona fondant, salted caramel lava, clotted cream ice cream and cocoa tuile.</p>
+          <div class="item-tags"><span class="tag veg">Vegetarian</span><span class="tag chef">Chef's Pick</span></div>
+        </div>
+        <div class="menu-item">
+          <div class="item-top"><span class="item-name">Lemon Tarte Fine</span><span class="item-price">$14</span></div>
+          <p class="item-desc">Paper-thin pastry, lemon curd, Italian meringue torched to order, candied zest.</p>
+          <div class="item-tags"><span class="tag veg">Vegetarian</span></div>
+        </div>
+        <div class="menu-item">
+          <div class="item-top"><span class="item-name">Seasonal Cheese Board</span><span class="item-price">$22</span></div>
+          <p class="item-desc">Five artisan cheeses, honeycomb, fig jam, pickled grapes, walnuts and seeded crackers.</p>
+          <div class="item-tags"><span class="tag veg">Vegetarian</span></div>
+        </div>
+        <div class="menu-item">
+          <div class="item-top"><span class="item-name">Tiramisu Classico</span><span class="item-price">$14</span></div>
+          <p class="item-desc">Traditional ladyfinger layers, espresso-soaked, mascarpone and dark chocolate dusting.</p>
+          <div class="item-tags"><span class="tag veg">Vegetarian</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DRINKS -->
+    <div class="menu-section visible" data-section="drinks">
+      <div class="section-header"><h3>🍷 Drinks</h3></div>
+      <div class="menu-grid">
+        <div class="menu-item">
+          <div class="item-top"><span class="item-name">Sommelier's Red Selection</span><span class="item-price">$18 /glass</span></div>
+          <p class="item-desc">Rotating selection of boutique reds — ask your server for tonight's pour from our 200-label cellar.</p>
+          <div class="item-tags"><span class="tag">Vegan</span></div>
+        </div>
+        <div class="menu-item">
+          <div class="item-top"><span class="item-name">Oak Smoked Old Fashioned</span><span class="item-price">$19</span></div>
+          <p class="item-desc">Bourbon aged in-house over oak chips, orange bitters, house-made demerara syrup, smoked cedar garnish.</p>
+          <div class="item-tags"><span class="tag chef">Bartender's Pick</span></div>
+        </div>
+        <div class="menu-item">
+          <div class="item-top"><span class="item-name">Garden Shrub Cooler</span><span class="item-price">$11</span></div>
+          <p class="item-desc">Seasonal herb-infused shrub, house sparkling water, elderflower and fresh citrus. Non-alcoholic.</p>
+          <div class="item-tags"><span class="tag veg">Non-Alcoholic</span></div>
+        </div>
+        <div class="menu-item">
+          <div class="item-top"><span class="item-name">Espresso Martini</span><span class="item-price">$17</span></div>
+          <p class="item-desc">Cold brew espresso, premium vodka, coffee liqueur, topped with a single coffee bean.</p>
+          <div class="item-tags"><span class="tag chef">Bartender's Pick</span></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /menu-body -->
+</div>
+
+<script>
+  // ── AUTH ──
+  function doLogin() {
+    const email = document.getElementById('email').value.trim();
+    const pass  = document.getElementById('password').value.trim();
+    const err   = document.getElementById('error-msg');
+    if ((email === 'guest@emberoak.com' || email === 'guest') && (pass === '1234')) {
+      err.style.display = 'none';
+      showPage('home');
+    } else {
+      err.style.display = 'block';
+    }
+  }
+
+  document.getElementById('password').addEventListener('keydown', e => {
+    if (e.key === 'Enter') doLogin();
+  });
+
+  function doLogout() {
+    showPage('login');
+    document.getElementById('email').value = '';
+    document.getElementById('password').value = '';
+  }
+
+  // ── PAGE ROUTING ──
+  function showPage(name) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    const pg = document.getElementById(name + '-page');
+    pg.classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // ── MENU FILTER ──
+  function filterMenu(section, btn) {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const sections = document.querySelectorAll('.menu-section');
+    sections.forEach(s => {
+      if (section === 'all' || s.dataset.section === section) {
+        s.classList.add('visible');
+      } else {
+        s.classList.remove('visible');
+      }
+    });
+  }
+</script>
+</body>
+</html>
